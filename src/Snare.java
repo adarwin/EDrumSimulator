@@ -9,8 +9,8 @@ package com.adarwin.edrum;
 
 public class Snare extends Drum {
 
-    private static String name = "HiHat";
-    private static String path = "audio/jazz/hihat - closed side - 1.wav";
+    private static String name = "Snare";
+    private static String path = "audio/jazz/snare - snares on - 1.wav";
 
     public Snare() {
         super(name, path);

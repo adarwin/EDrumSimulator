@@ -13,6 +13,7 @@ import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
@@ -51,8 +52,18 @@ public class EDrumSimulator {
                 createAndShowGUI();
             }
         });
+
         System.out.println("Now entering loop");
         TriggerEvent triggerEvent;
+        long lastHiHatTime = 0;
+        long lastSnareTime = 0;
+        long lastKickTime = 0;
+        long triggerTime = 0;
+        long currentTime = 0;
+        long nextBeatMark = 0;
+        LinkedList<Long> tapDurations = new LinkedList<Long>();
+        int maxTapDurationsSize = 2;
+
         while (!quit) {
             // For some bizzarre reason, some time needs to be taken up
             // in order for drum sounds to be played.
@@ -61,20 +72,62 @@ public class EDrumSimulator {
             } catch (InterruptedException ex) {
                 System.out.println(ex);
             }
+            currentTime = System.currentTimeMillis();
+            if (currentTime > nextBeatMark - 30 &&
+                    currentTime < nextBeatMark + 30) {
+                playDrum(new Snare());
+                //Figure out next beat mark
+                if (tapDurations.size() > 0) {
+                    nextBeatMark = currentTime + averageDuration(tapDurations);
+                }
+            }
             triggerEvent = triggerEvents.poll();
             if (triggerEvent != null) {
+                System.out.println(getBPM(tapDurations));
+                triggerTime = triggerEvent.getTime();
                 // Do something with the trigger event
-                long triggerTime = triggerEvent.getTime();
                 Drum drum = triggerEvent.getDrum();
+                // Figure out which drum was hit
+                if (drum instanceof HiHat) {
+                    long duration = triggerTime - lastHiHatTime;
+                    tapDurations.add(duration);
+                    if (tapDurations.size() > maxTapDurationsSize) {
+                        tapDurations.poll();
+                    }
+                    lastHiHatTime = triggerTime;
+                } else if (drum instanceof Snare) {
+                    lastSnareTime = triggerTime;
+                } else if (drum instanceof Kick) {
+                    lastKickTime = triggerTime;
+                } else {
+                }
                 if (drum != null) {
                     System.out.println("Processing " + drum);
                     playDrum(drum);
-                } else {
-                    System.out.println("Drum was null");
                 }
             }
         }
         System.out.println("Quit Loop");
+    }
+
+
+    private static long averageDuration(List<Long> durationList) {
+        long sum = 0;
+        for (long duration : durationList) {
+            sum += duration;
+        }
+        return sum/durationList.size();
+    }
+
+    private static long getBPM(List<Long> durationList) {
+        long bpm = 0;
+        long average = 0;
+        if (durationList != null && durationList.size() > 0) {
+            average = averageDuration(durationList);
+            bpm = 60000 / average;
+        }
+        // Divide number of miliseconds per minute by average duration
+        return bpm;
     }
 
     private static void createAndShowGUI() {
