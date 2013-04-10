@@ -12,6 +12,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.LinkedList;
 import java.util.List;
 import javax.swing.JFrame;
@@ -21,32 +23,31 @@ public class EDrumSimulator {
 
     private static JFrame frame;
     private static boolean quit = false;
+    private static Drum hihat, snare, kick, openHat;
+    private static LinkedList<Drum> playedDrums = new LinkedList<Drum>();
+    private static ArrayBlockingQueue<TriggerEvent> triggerEvents;
 
     private static ArrayList<Integer> hihats = new ArrayList<Integer>(
-        Arrays.asList(74, 75) // J, K
+        Arrays.asList(71, 72, 74) // G, H, J
     );
-
     private static ArrayList<Integer> openHats = new ArrayList<Integer>(
         Arrays.asList(76) // L
     );
-
     private static ArrayList<Integer> snares = new ArrayList<Integer>(
-        Arrays.asList(68, 69, 82, 83) // D, E, R, S
+        Arrays.asList(68, 75, 69, 82, 83) // D, K, E, R, S
     );
-
     private static ArrayList<Integer> kicks = new ArrayList<Integer>(
-        Arrays.asList(70, 73, 85) // F, U, I
+        Arrays.asList(70, 73, 85, 89) // F, U, I, Y
     );
 
-    private static Drum hihat, snare, kick, openHat;
-
-    private static LinkedList<Drum> playedDrums = new LinkedList<Drum>();
-    private static LinkedList<TriggerEvent> triggerEvents;
 
 
 
     public static void main(String[] args) {
-        triggerEvents = new LinkedList<TriggerEvent>();
+        triggerEvents = new ArrayBlockingQueue<TriggerEvent>(5);
+                                            // The event queue doesn't need to
+                                            // be very large since drums are
+                                            // played in real time.
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 createAndShowGUI();
@@ -54,7 +55,7 @@ public class EDrumSimulator {
         });
 
         System.out.println("Now entering loop");
-        TriggerEvent triggerEvent;
+        TriggerEvent triggerEvent = null;
         long lastHiHatTime = 0;
         long lastSnareTime = 0;
         long lastKickTime = 0;
@@ -65,13 +66,6 @@ public class EDrumSimulator {
         int maxTapDurationsSize = 2;
 
         while (!quit) {
-            // For some bizzarre reason, some time needs to be taken up
-            // in order for drum sounds to be played.
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException ex) {
-                System.out.println(ex);
-            }
             currentTime = System.currentTimeMillis();
             if (currentTime > nextBeatMark - 30 &&
                     currentTime < nextBeatMark + 30) {
@@ -131,10 +125,11 @@ public class EDrumSimulator {
     }
 
     private static void createAndShowGUI() {
-        hihat = new Drum("HiHat", "audio/jazz/hihat - closed side - 1.wav");
-        snare = new Drum("Snare", "audio/jazz/snare - snares on - 1.wav");
-        kick = new Drum("Kick", "audio/pearl_master/kick 4 outside - 22in pearl master custom.wav");
+        //hihat = new Drum("HiHat", "audio/jazz/hihat - closed side - 1.wav");
+        //snare = new Drum("Snare", "audio/jazz/snare - snares on - 1.wav");
+        //kick = new Drum("Kick", "audio/pearl_master/kick 4 outside - 22in pearl master custom.wav");
         openHat = new Drum("Open HiHat", "audio/jazz/hihat - opened 1 - 1.wav");
+
         frame = new JFrame("EDrumSimulator");
         frame.setSize(new Dimension(800, 600));
         frame.addKeyListener(new KeyListener() {
@@ -146,9 +141,9 @@ public class EDrumSimulator {
                     // Fire Trigger Event
                     TriggerEvent newEvent = new TriggerEvent(new HiHat());
                     triggerEvents.add(newEvent);
-                    if (triggerEvents.contains(newEvent)) {
-                        System.out.println("Added new HiHat trigger event");
-                    }
+                    //if (triggerEvents.contains(newEvent)) {
+                        //System.out.println("Added new HiHat trigger event");
+                    //}
                     //playDrum(hihat);
                     //try {
                         //Thread.sleep(10);
@@ -157,7 +152,8 @@ public class EDrumSimulator {
                     //}
                 } else if (snares.contains(keyCode)) {
                     System.out.println("snare");
-                    triggerEvents.add(new TriggerEvent(snare));
+                    TriggerEvent newEvent = new TriggerEvent(new Snare());
+                    triggerEvents.add(newEvent);
                     //playDrum(snare);
                     //try {
                         //Thread.sleep(10);
@@ -167,15 +163,17 @@ public class EDrumSimulator {
                     muteDrum(kick);
                 } else if (kicks.contains(keyCode)) {
                     System.out.println("kick");
-                    triggerEvents.add(new TriggerEvent(kick));
+                    TriggerEvent newEvent = new TriggerEvent(new Kick());
+                    triggerEvents.add(newEvent);
                     //playDrum(kick);
                     //try {
                         //Thread.sleep(10);
                     //} catch (InterruptedException ex) {
                         //System.out.println(ex);
                     //}
-                    muteDrum(snare);
+                    //muteDrum(snare);
                 } else if (openHats.contains(keyCode)) {
+                    System.out.println("OpenHat");
                     triggerEvents.add(new TriggerEvent(openHat));
                     //playDrum(openHat);
                 } else {

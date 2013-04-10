@@ -9,8 +9,8 @@ package com.adarwin.edrum;
 
 public class Kick extends Drum {
 
-    private static String name = "HiHat";
-    private static String path = "audio/jazz/hihat - closed side - 1.wav";
+    private static String name = "Kick";
+    private static String path = "audio/jazz/kick - snares on - 1.wav";
 
     public Kick() {
         super(name, path);
