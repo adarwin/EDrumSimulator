@@ -62,43 +62,46 @@ public class EDrumSimulator {
         long triggerTime = 0;
         long currentTime = 0;
         long nextBeatMark = 0;
-        LinkedList<Long> tapDurations = new LinkedList<Long>();
+        LinkedList<Long> hihatDurations = new LinkedList<Long>();
+        LinkedList<Long> snareDurations = new LinkedList<Long>();
+        LinkedList<Long> kickDurations = new LinkedList<Long>();
         int maxTapDurationsSize = 2;
 
         while (!quit) {
-            currentTime = System.currentTimeMillis();
-            if (currentTime > nextBeatMark - 30 &&
-                    currentTime < nextBeatMark + 30) {
-                playDrum(new Snare());
+            //currentTime = System.currentTimeMillis();
+            //if (currentTime > nextBeatMark - 30 &&
+                    //currentTime < nextBeatMark + 30) {
+                //playDrum(new Snare());
                 //Figure out next beat mark
-                if (tapDurations.size() > 0) {
-                    nextBeatMark = currentTime + averageDuration(tapDurations);
-                }
-            }
+                //if (tapDurations.size() > 0) {
+                    //nextBeatMark = currentTime + averageDuration(tapDurations);
+                //}
+            //}
             triggerEvent = triggerEvents.poll();
             if (triggerEvent != null) {
-                System.out.println(getBPM(tapDurations));
-                triggerTime = triggerEvent.getTime();
-                // Do something with the trigger event
+                // Play the drum as soon as possible. Do processing after,
+                // since there will be relatively tons of time.
                 Drum drum = triggerEvent.getDrum();
+                if (drum != null) {
+                    playDrum(drum);
+                }
+                triggerTime = triggerEvent.getTime();
                 // Figure out which drum was hit
                 if (drum instanceof HiHat) {
                     long duration = triggerTime - lastHiHatTime;
-                    tapDurations.add(duration);
-                    if (tapDurations.size() > maxTapDurationsSize) {
-                        tapDurations.poll();
+                    hihatDurations.add(duration);
+                    if (hihatDurations.size() > maxTapDurationsSize) {
+                        hihatDurations.poll();
                     }
                     lastHiHatTime = triggerTime;
                 } else if (drum instanceof Snare) {
+                    long duration = triggerTime - lastSnareTime;
                     lastSnareTime = triggerTime;
                 } else if (drum instanceof Kick) {
                     lastKickTime = triggerTime;
                 } else {
                 }
-                if (drum != null) {
-                    System.out.println("Processing " + drum);
-                    playDrum(drum);
-                }
+                System.out.println(getBPM(hihatDurations));
             }
         }
         System.out.println("Quit Loop");
@@ -125,57 +128,27 @@ public class EDrumSimulator {
     }
 
     private static void createAndShowGUI() {
-        //hihat = new Drum("HiHat", "audio/jazz/hihat - closed side - 1.wav");
-        //snare = new Drum("Snare", "audio/jazz/snare - snares on - 1.wav");
-        //kick = new Drum("Kick", "audio/pearl_master/kick 4 outside - 22in pearl master custom.wav");
         openHat = new Drum("Open HiHat", "audio/jazz/hihat - opened 1 - 1.wav");
 
         frame = new JFrame("EDrumSimulator");
-        frame.setSize(new Dimension(800, 600));
+        frame.setSize(new Dimension(380, 240));
         frame.addKeyListener(new KeyListener() {
             public void keyPressed(KeyEvent e) {
                 int keyCode = e.getKeyCode();
                 if (keyCode == 81) {
                     quit = true;
                 } else if (hihats.contains(keyCode)) {
-                    // Fire Trigger Event
-                    TriggerEvent newEvent = new TriggerEvent(new HiHat());
-                    triggerEvents.add(newEvent);
-                    //if (triggerEvents.contains(newEvent)) {
-                        //System.out.println("Added new HiHat trigger event");
-                    //}
-                    //playDrum(hihat);
-                    //try {
-                        //Thread.sleep(10);
-                    //} catch (InterruptedException ex) {
-                        //System.out.println(ex);
-                    //}
+                    System.out.println("hihat");
+                    fireTriggerEvent(new HiHat());
                 } else if (snares.contains(keyCode)) {
                     System.out.println("snare");
-                    TriggerEvent newEvent = new TriggerEvent(new Snare());
-                    triggerEvents.add(newEvent);
-                    //playDrum(snare);
-                    //try {
-                        //Thread.sleep(10);
-                    //} catch (InterruptedException ex) {
-                        //System.out.println(ex);
-                    //}
-                    muteDrum(kick);
+                    fireTriggerEvent(new Snare());
                 } else if (kicks.contains(keyCode)) {
                     System.out.println("kick");
-                    TriggerEvent newEvent = new TriggerEvent(new Kick());
-                    triggerEvents.add(newEvent);
-                    //playDrum(kick);
-                    //try {
-                        //Thread.sleep(10);
-                    //} catch (InterruptedException ex) {
-                        //System.out.println(ex);
-                    //}
-                    //muteDrum(snare);
+                    fireTriggerEvent(new Kick());
                 } else if (openHats.contains(keyCode)) {
                     System.out.println("OpenHat");
                     triggerEvents.add(new TriggerEvent(openHat));
-                    //playDrum(openHat);
                 } else {
                     System.out.println(e.getKeyCode());
                 }
@@ -189,15 +162,13 @@ public class EDrumSimulator {
     }
 
 
-    private static void fireTriggerEvent(Drum drum) {
+    private static void fireTriggerEvent(Drum newDrum) {
+        TriggerEvent newEvent = new TriggerEvent(newDrum);
+        triggerEvents.add(newEvent);
     }
     
     private static void playDrum(Drum drum) {
-        //playedDrums.add(drum);
         drum.play();
-        //if (playedDrums.size() > 9) {
-            //muteDrum(playedDrums.poll());
-        //}
     }
 
     private static void muteDrum(Drum drum) {
